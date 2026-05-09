@@ -8,7 +8,7 @@ A lightweight, secure QR-based attendance system built for programs with 10–20
 
 ## Features
 
-- 📷 **Continuous QR scanning** — camera stays open, auto-resets after each scan
+- 📷 **Continuous QR scanning** — camera stays open, auto-resets after each scan in under 2 seconds
 - ✅ **Check In / Check Out** — fills the same row, no duplicate rows
 - ⚠️ **Duplicate detection** — frontend + backend both block double-scanning
 - 🔒 **Private by design** — scanner only accessible via Tailscale VPN
@@ -18,6 +18,31 @@ A lightweight, secure QR-based attendance system built for programs with 10–20
 - 🔁 **Self-healing** — watchdog script auto-restarts anything that breaks
 - 🌙 **Dark / Light mode** — with Arabic font support
 - 📱 **Works on any phone** — no app install needed, just a browser
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><b>Dark Mode</b></td>
+    <td align="center"><b>Light Mode</b></td>
+  </tr>
+  <tr>
+    <td><img src="images/dark-mode.jpg" width="240"/></td>
+    <td><img src="images/light-mode.jpg" width="240"/></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Live Scanning</b></td>
+    <td align="center"><b>Google Sheet — Real Time</b></td>
+  </tr>
+  <tr>
+    <td><img src="images/scanning.jpg" width="240"/></td>
+    <td><img src="images/sheet.png" width="240"/></td>
+  </tr>
+</table>
+
+> ⚡ From QR scan to Google Sheet update — **under 2 seconds**
 
 ---
 
@@ -314,6 +339,19 @@ Audit log entry added
 ## License
 
 MIT — free to use, modify, and distribute.
+
+---
+
+## Deploying for a New Program
+
+Only two files need updating between deployments:
+
+| File | What to update |
+|---|---|
+| `scanner.html` | `STUDENTS` object — add your student list |
+| `server.py` | `GOOGLE_APPS_SCRIPT_URL` + `SECRET_TOKEN` |
+
+Everything else — watchdog, Telegram bot, Apps Script, QR generator — stays unchanged.
 
 ---
 
