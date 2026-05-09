@@ -42,6 +42,12 @@ Google Apps Script
         └── Audit tab
 ```
 
+> **Note:** The watchdog script and Telegram bot are **optional**.
+> The core system (scanner + Python server + Apps Script + Google Sheets) works
+> fully without them. The watchdog adds self-healing reliability and the Telegram
+> bot adds remote monitoring — both recommended for unattended deployments like
+> a Raspberry Pi running 24/7, but not required for basic use on a Mac or PC.
+
 ---
 
 ## Security Layers
@@ -63,7 +69,11 @@ Google Apps Script
 - `pip install requests qrcode pillow`
 - A Google account
 - A Tailscale account (free tier is enough)
-- A Raspberry Pi (recommended) or any Mac/Linux machine
+- Any of the following as your server:
+  - **Raspberry Pi 4B** *(recommended — runs 24/7, low power)*
+  - macOS (tested on MacBook Air)
+  - Windows (WSL or native Python)
+  - Any Linux machine
 
 ---
 
