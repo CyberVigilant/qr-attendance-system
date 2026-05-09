@@ -2,469 +2,1233 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Attendance Scanner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>QR Attendance Scanner</title>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap');
 
-  [data-theme="dark"] {
-    --bg:         #0a0c10;
-    --surface:    #111418;
-    --border:     #1e2530;
-    --text:       #e2e8f0;
-    --muted:      #64748b;
-    --accent:     #00d4aa;
-    --accent-dim: rgba(0,212,170,0.10);
-    --red:        #ff4d6d;
-    --red-dim:    rgba(255,77,109,0.10);
-    --yellow:     #fbbf24;
-    --yellow-dim: rgba(251,191,36,0.10);
-  }
+/* ═══════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════ */
+:root {
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  20px;
+  --transition: 0.2s ease;
+  --max-w:      480px;
+}
 
-  [data-theme="light"] {
-    --bg:         #f0f2f5;
-    --surface:    #ffffff;
-    --border:     #dde1e7;
-    --text:       #111418;
-    --muted:      #8896a8;
-    --accent:     #00a884;
-    --accent-dim: rgba(0,168,132,0.10);
-    --red:        #e03354;
-    --red-dim:    rgba(224,51,84,0.10);
-    --yellow:     #d97706;
-    --yellow-dim: rgba(217,119,6,0.10);
-  }
+[data-theme="dark"] {
+  --bg:          #0a0c10;
+  --surface:     #111418;
+  --surface-2:   #1a1f28;
+  --border:      #1e2530;
+  --text:        #e2e8f0;
+  --text-2:      #94a3b8;
+  --muted:       #475569;
+  --accent:      #00d4aa;
+  --accent-dim:  rgba(0,212,170,0.12);
+  --accent-border: rgba(0,212,170,0.35);
+  --red:         #ff4d6d;
+  --red-dim:     rgba(255,77,109,0.12);
+  --red-border:  rgba(255,77,109,0.35);
+  --yellow:      #fbbf24;
+  --yellow-dim:  rgba(251,191,36,0.12);
+  --yellow-border: rgba(251,191,36,0.35);
+}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[data-theme="light"] {
+  --bg:          #f1f5f9;
+  --surface:     #ffffff;
+  --surface-2:   #f8fafc;
+  --border:      #e2e8f0;
+  --text:        #0f172a;
+  --text-2:      #475569;
+  --muted:       #94a3b8;
+  --accent:      #0891b2;
+  --accent-dim:  rgba(8,145,178,0.10);
+  --accent-border: rgba(8,145,178,0.35);
+  --red:         #dc2626;
+  --red-dim:     rgba(220,38,38,0.10);
+  --red-border:  rgba(220,38,38,0.35);
+  --yellow:      #d97706;
+  --yellow-dim:  rgba(217,119,6,0.10);
+  --yellow-border: rgba(217,119,6,0.35);
+}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: background 0.25s, color 0.25s;
-  }
+/* ═══════════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════════ */
+*, *::before, *::after {
+  margin: 0; padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  header {
-    width: 100%;
-    max-width: 480px;
-    padding: 18px 16px 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+html, body {
+  height: 100%;
+  font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: background var(--transition), color var(--transition);
+  -webkit-font-smoothing: antialiased;
+}
 
-  .brand { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
-  .header-right { display: flex; align-items: center; gap: 8px; }
+/* ═══════════════════════════════════════════════════
+   SETUP SCREEN
+═══════════════════════════════════════════════════ */
+#setup {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 0;
+  transition: background var(--transition);
+}
 
-  .icon-btn {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 6px 10px; cursor: pointer;
-    font-size: 15px; transition: border-color 0.2s; color: var(--text); line-height: 1;
-  }
-  .icon-btn:hover { border-color: var(--accent); }
+#setup.hidden { display: none; }
 
-  .status-pill {
-    display: flex; align-items: center; gap: 6px;
-    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-    color: var(--muted); letter-spacing: 0.08em;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 4px 10px;
-  }
-  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
-  .status-pill.scanning { color: var(--accent); border-color: rgba(0,212,170,0.3); }
-  .status-pill.scanning .dot { background: var(--accent); animation: pulse 1.5s infinite; }
+.setup-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: 36px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
 
-  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+.setup-theme-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -8px;
+}
 
-  main { width: 100%; max-width: 480px; padding: 14px 16px 40px; display: flex; flex-direction: column; gap: 12px; }
+.theme-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
 
-  .toggle-wrap {
-    display: grid; grid-template-columns: 1fr 1fr;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 3px; gap: 3px;
-  }
-  .toggle-btn {
-    padding: 9px; border: 1px solid transparent; border-radius: 7px;
-    background: transparent; color: var(--muted);
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
-    font-weight: 600; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
-  }
-  .toggle-btn.active-in  { background: var(--accent-dim); color: var(--accent); border-color: rgba(0,212,170,0.3); }
-  .toggle-btn.active-out { background: var(--red-dim);    color: var(--red);    border-color: rgba(255,77,109,0.3); }
+.theme-switch-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--text-2);
+  user-select: none;
+}
 
-  .camera-wrap {
-    position: relative; background: #000;
-    border: 1px solid var(--border); border-radius: 14px;
-    overflow: hidden; aspect-ratio: 1;
-  }
-  #reader { width: 100% !important; }
-  #reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
-  #reader img { display: none !important; }
+/* Toggle pill */
+.pill {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: var(--border);
+  border-radius: 13px;
+  transition: background var(--transition);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  flex-shrink: 0;
+}
 
-  .scan-overlay { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
-  .scan-frame { width: 54%; height: 54%; position: relative; }
-  .scan-frame::before,.scan-frame::after,.scan-frame span::before,.scan-frame span::after {
-    content:''; position:absolute; width:20px; height:20px; border-color:var(--accent); border-style:solid;
-  }
-  .scan-frame::before      { top:0;    left:0;  border-width:2px 0 0 2px; }
-  .scan-frame::after       { top:0;    right:0; border-width:2px 2px 0 0; }
-  .scan-frame span::before { bottom:0; left:0;  border-width:0 0 2px 2px; }
-  .scan-frame span::after  { bottom:0; right:0; border-width:0 2px 2px 0; }
-  .scan-line {
-    position:absolute; left:8%; right:8%; height:1px;
-    background:linear-gradient(90deg,transparent,var(--accent),transparent);
-    animation:scanline 2s ease-in-out infinite;
-  }
-  @keyframes scanline { 0%{top:15%;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{top:85%;opacity:0} }
+.pill::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--text-2);
+  transition: transform var(--transition), background var(--transition);
+}
 
-  .cam-stopped {
-    position:absolute; inset:0; background:rgba(0,0,0,0.85);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:10px; border-radius:14px;
-  }
-  .cam-stopped span { font-size:32px; }
-  .cam-stopped p { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); }
+.pill.active {
+  background: var(--accent);
+}
 
-  .perm-prompt {
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:12px; aspect-ratio:1; background:var(--surface);
-    border:1px solid var(--border); border-radius:14px;
-  }
-  .perm-prompt .icon { font-size:32px; }
-  .perm-prompt p { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); text-align:center; padding:0 24px; line-height:1.7; }
+.pill.active::after {
+  transform: translateX(22px);
+  background: #fff;
+}
 
-  .start-btn {
-    background:var(--accent); color:#fff; border:none; border-radius:8px;
-    padding:11px 26px; font-family:'IBM Plex Mono',monospace; font-size:12px;
-    font-weight:600; letter-spacing:0.05em; cursor:pointer; transition:opacity 0.2s;
-  }
-  .start-btn:hover { opacity:0.85; }
+.setup-icon {
+  font-size: 48px;
+  text-align: center;
+  line-height: 1;
+}
 
-  .result-card {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:12px; padding:16px; display:flex; flex-direction:column;
-    gap:3px; min-height:82px; justify-content:center; transition:all 0.25s;
-  }
-  .result-card.success { border-color:rgba(0,212,170,0.4); background:var(--accent-dim); }
-  .result-card.error   { border-color:rgba(255,77,109,0.4); background:var(--red-dim); }
-  .result-card.warning { border-color:rgba(251,191,36,0.4); background:var(--yellow-dim); }
+.setup-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  letter-spacing: -0.01em;
+}
 
-  .result-status { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
-  .result-card.success .result-status { color:var(--accent); }
-  .result-card.error   .result-status { color:var(--red); }
-  .result-card.warning .result-status { color:var(--yellow); }
-  .result-name { font-size:20px; font-weight:600; color:var(--text); line-height:1.2; }
-  .result-meta { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin-top:1px; }
-  .result-idle { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); text-align:center; }
+.setup-desc {
+  font-size: 14px;
+  color: var(--text-2);
+  text-align: center;
+  line-height: 1.6;
+}
 
-  .stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
-  .stat-box { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
-  .stat-label { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
-  .stat-value { font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600; color:var(--text); }
-  .stat-value.warn { color:var(--yellow); }
+.setup-input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', sans-serif;
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  transition: border-color var(--transition);
+}
 
-  .log-section { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-  .log-header {
-    padding:10px 14px; border-bottom:1px solid var(--border);
-    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em;
-    text-transform:uppercase; color:var(--muted); display:flex; justify-content:space-between; align-items:center;
-  }
-  .log-list { max-height:200px; overflow-y:auto; }
-  .log-item {
-    padding:9px 14px; border-bottom:1px solid var(--border);
-    display:grid; grid-template-columns:1fr auto auto auto; gap:8px;
-    align-items:center; animation:slideIn 0.2s ease;
-  }
-  @keyframes slideIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
-  .log-item:last-child { border-bottom:none; }
-  .log-name { font-size:13px; color:var(--text); }
-  .log-type { font-family:'IBM Plex Mono',monospace; font-size:9px; padding:2px 6px; border-radius:4px; font-weight:600; }
-  .log-type.in  { background:var(--accent-dim); color:var(--accent); }
-  .log-type.out { background:var(--red-dim);    color:var(--red); }
-  .log-time { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); }
-  .log-delete { background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:0 2px; line-height:1; transition:color 0.15s; border-radius:4px; }
-  .log-delete:hover { color:var(--red); }
-  .log-empty { padding:20px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); }
-  .log-list::-webkit-scrollbar { width:3px; }
-  .log-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.setup-input::placeholder { color: var(--muted); }
+.setup-input:focus { border-color: var(--accent); }
+.setup-input.error { border-color: var(--red); }
 
-  .footer { text-align:center; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); padding:4px; opacity:0.5; }
+.setup-error {
+  font-size: 13px;
+  color: var(--red);
+  text-align: center;
+  display: none;
+}
+
+.setup-error.show { display: block; }
+
+.setup-btn {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 15px;
+  font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--transition), transform var(--transition);
+  letter-spacing: 0.01em;
+}
+
+.setup-btn:hover  { opacity: 0.88; }
+.setup-btn:active { transform: scale(0.98); }
+
+/* ═══════════════════════════════════════════════════
+   MAIN APP
+═══════════════════════════════════════════════════ */
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.header {
+  width: 100%;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 18px 16px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.brand-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.brand-date {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: border-color var(--transition), background var(--transition);
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.icon-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+
+/* Status pill */
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  transition: all var(--transition);
+}
+
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+  transition: background var(--transition);
+}
+
+.status-pill.scanning {
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.status-pill.scanning .status-dot {
+  background: var(--accent);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* ── Main content ── */
+.main {
+  width: 100%;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 14px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+/* ── Mode toggle ── */
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 4px;
+}
+
+.mode-btn {
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.mode-btn.in  { background: var(--accent-dim);  color: var(--accent); border-color: var(--accent-border); }
+.mode-btn.out { background: var(--red-dim);     color: var(--red);    border-color: var(--red-border); }
+
+/* ── Camera ── */
+.camera-wrap {
+  position: relative;
+  background: #000;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 1;
+}
+
+.camera-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  aspect-ratio: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.camera-prompt .prompt-icon { font-size: 36px; }
+.camera-prompt p {
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: center;
+  line-height: 1.6;
+  padding: 0 20px;
+}
+
+.start-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 11px 24px;
+  font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--transition);
+}
+
+.start-btn:hover { opacity: 0.85; }
+
+/* QR reader overrides */
+#qr-reader { width: 100% !important; }
+#qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+#qr-reader img { display: none !important; }
+#qr-reader__scan_region { border: none !important; }
+
+/* Scan overlay */
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-frame {
+  width: 55%;
+  height: 55%;
+  position: relative;
+}
+
+.scan-frame::before, .scan-frame::after,
+.scan-frame span::before, .scan-frame span::after {
+  content: '';
+  position: absolute;
+  width: 22px; height: 22px;
+  border-color: var(--accent);
+  border-style: solid;
+}
+
+.scan-frame::before      { top: 0;    left: 0;  border-width: 2.5px 0 0 2.5px; }
+.scan-frame::after       { top: 0;    right: 0; border-width: 2.5px 2.5px 0 0; }
+.scan-frame span::before { bottom: 0; left: 0;  border-width: 0 0 2.5px 2.5px; }
+.scan-frame span::after  { bottom: 0; right: 0; border-width: 0 2.5px 2.5px 0; }
+
+.scan-line {
+  position: absolute;
+  left: 8%; right: 8%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: scanline 2s ease-in-out infinite;
+}
+
+@keyframes scanline {
+  0%   { top: 12%; opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { top: 88%; opacity: 0; }
+}
+
+/* Camera paused */
+.cam-paused {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.82);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: var(--radius-lg);
+}
+
+.cam-paused .pause-icon { font-size: 36px; }
+.cam-paused p { font-size: 13px; color: var(--text-2); }
+
+/* ── Result card ── */
+.result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.result-card.success { background: var(--accent-dim);  border-color: var(--accent-border); }
+.result-card.error   { background: var(--red-dim);     border-color: var(--red-border); }
+.result-card.warning { background: var(--yellow-dim);  border-color: var(--yellow-border); }
+
+.result-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.result-card.success .result-status { color: var(--accent); }
+.result-card.error   .result-status { color: var(--red); }
+.result-card.warning .result-status { color: var(--yellow); }
+
+.result-name { font-size: 21px; font-weight: 600; color: var(--text); line-height: 1.25; }
+.result-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.result-idle { font-size: 13px; color: var(--muted); text-align: center; }
+
+/* ── Stats ── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.stat-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1;
+}
+
+.stat-value.warn { color: var(--yellow); }
+
+/* ── Log ── */
+.log {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.log-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.log-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.log-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  flex: 1;
+}
+
+.clear-btn {
+  background: var(--red-dim);
+  border: 1px solid var(--red-border);
+  color: var(--red);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: opacity var(--transition);
+}
+
+.clear-btn:hover { opacity: 0.75; }
+
+.log-list {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.log-list::-webkit-scrollbar { width: 3px; }
+.log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.log-item {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+  animation: slide-in 0.2s ease;
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.log-item:last-child { border-bottom: none; }
+.log-name  { font-size: 13px; color: var(--text); }
+
+.log-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.log-badge.in  { background: var(--accent-dim); color: var(--accent); }
+.log-badge.out { background: var(--red-dim);    color: var(--red); }
+
+.log-time { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
+
+.log-del {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color var(--transition);
+}
+
+.log-del:hover { color: var(--red); }
+
+.log-empty {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Footer ── */
+.footer {
+  width: 100%;
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 16px 16px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-slogan {
+  font-size: 13px;
+  color: var(--text-2);
+  text-align: center;
+}
+
+.footer-slogan a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footer-slogan a:hover { text-decoration: underline; }
+
+.footer-repo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.footer-repo:hover { color: var(--text-2); }
+
 </style>
 </head>
 <body>
 
-<!-- Setup overlay -->
-<div id="setupOverlay" style="position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:16px;">
-  <div style="font-size:36px">🔐</div>
-  <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);text-align:center;letter-spacing:0.08em;text-transform:uppercase">Staff Access</div>
-  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:center;line-height:1.7;max-width:280px">Enter your name to identify your device in the audit log.</div>
-  <input id="deviceInput" type="text" placeholder="Your name (e.g. Ahmed - Staff)" style="width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);outline:none;transition:border-color 0.2s;" oninput="this.style.borderColor='var(--accent)'">
-  <div id="urlError" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);display:none">Please enter your name</div>
-  <button onclick="confirmSetup()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px 32px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;letter-spacing:0.05em;cursor:pointer;width:100%;max-width:380px;">Enter</button>
-</div>
+<!-- ══════════════════════════════════════
+     SETUP SCREEN
+══════════════════════════════════════ -->
+<div id="setup">
+  <div class="setup-card">
 
-<header>
-  <div>
-    <div class="brand">QR ATTENDANCE SYSTEM</div>
-    <div id="todayDate" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:0.05em"></div>
-  </div>
-  <div class="header-right">
-    <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">☀️</button>
-    <button class="icon-btn" onclick="toggleCamera()" id="camBtn" title="Toggle camera">⏹</button>
-    <div class="status-pill" id="statusPill"><div class="dot"></div><span id="statusText">READY</span></div>
-  </div>
-</header>
-
-<main>
-  <div class="toggle-wrap">
-    <button class="toggle-btn active-in" id="btnIn"  onclick="setMode('in')">CHECK IN</button>
-    <button class="toggle-btn"           id="btnOut" onclick="setMode('out')">CHECK OUT</button>
-  </div>
-
-  <div id="cameraWrap" class="perm-prompt">
-    <div class="icon">📷</div>
-    <p>Tap to start scanning<br>student QR codes</p>
-    <button class="start-btn" onclick="startScanner()">START CAMERA</button>
-  </div>
-
-  <div class="result-card" id="resultCard">
-    <div class="result-idle">Waiting for scan…</div>
-  </div>
-
-  <div class="stats-row">
-    <div class="stat-box"><div class="stat-label">CHECK INS</div><div class="stat-value" id="statIn">0</div></div>
-    <div class="stat-box"><div class="stat-label">CHECK OUTS</div><div class="stat-value" id="statOut">0</div></div>
-    <div class="stat-box"><div class="stat-label">DUPLICATES</div><div class="stat-value warn" id="statDup">0</div></div>
-  </div>
-
-  <div class="log-section">
-    <div class="log-header">
-      <span>SESSION LOG</span>
-      <span id="logCount">0 scans</span>
-      <button onclick="clearSession()" style="background:var(--red-dim);border:1px solid rgba(255,77,109,0.3);color:var(--red);border-radius:6px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;cursor:pointer;letter-spacing:0.05em;">CLEAR ALL</button>
+    <div class="setup-theme-row">
+      <label class="theme-switch" title="Toggle light/dark mode">
+        <span class="theme-switch-label">🌙</span>
+        <button class="pill" id="themePill" onclick="toggleTheme()" aria-label="Toggle theme"></button>
+        <span class="theme-switch-label">☀️</span>
+      </label>
     </div>
-    <div class="log-list" id="logList"><div class="log-empty">No scans yet</div></div>
-  </div>
-</main>
 
-<div class="footer">
-  <a href="https://github.com/CyberVigilant/qr-attendance-system" target="_blank" 
-     style="color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;opacity:0.6;transition:opacity 0.2s;"
-     onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
-    <svg height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
-      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
-    </svg>
-    CyberVigilant/qr-attendance-system
-  </a>
+    <div class="setup-icon">🔐</div>
+    <div class="setup-title">Staff Access</div>
+    <div class="setup-desc">Enter your name to identify your device in the audit log.</div>
+
+    <input
+      class="setup-input"
+      id="nameInput"
+      type="text"
+      placeholder="Your name (e.g. Ahmed - Staff)"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+    >
+
+    <div class="setup-error" id="nameError">Please enter your name to continue.</div>
+
+    <button class="setup-btn" id="enterBtn">Enter</button>
+
+  </div>
 </div>
+
+<!-- ══════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════ -->
+<div id="app">
+
+  <header class="header">
+    <div class="brand">
+      <div class="brand-name">QR Attendance</div>
+      <div class="brand-date" id="dateLabel"></div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" id="langBtn"  onclick="toggleLang()"   title="Toggle language">ع</button>
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()"  title="Toggle theme">☀️</button>
+      <button class="icon-btn" id="camBtn"   onclick="toggleCamera()" title="Toggle camera">⏹</button>
+      <div class="status-pill" id="statusPill">
+        <div class="status-dot"></div>
+        <span id="statusLabel">READY</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- Mode toggle -->
+    <div class="mode-toggle">
+      <button class="mode-btn in"  id="btnIn"  onclick="setMode('in')">CHECK IN</button>
+      <button class="mode-btn"     id="btnOut" onclick="setMode('out')">CHECK OUT</button>
+    </div>
+
+    <!-- Camera -->
+    <div id="cameraArea">
+      <div class="camera-prompt" id="cameraPrompt">
+        <div class="prompt-icon">📷</div>
+        <p id="promptText">Tap to start scanning student QR codes</p>
+        <button class="start-btn" id="startBtn" onclick="startCamera()">START CAMERA</button>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-card" id="resultCard">
+      <div class="result-idle" id="resultIdle">Waiting for scan…</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label" id="lblIn">CHECK INS</div>
+        <div class="stat-value" id="cntIn">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label" id="lblOut">CHECK OUTS</div>
+        <div class="stat-value" id="cntOut">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label" id="lblDup">DUPLICATES</div>
+        <div class="stat-value warn" id="cntDup">0</div>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="log">
+      <div class="log-header">
+        <span class="log-title" id="lblLog">SESSION LOG</span>
+        <span class="log-count" id="logCount">0 scans</span>
+        <button class="clear-btn" id="clearBtn" onclick="clearSession()">CLEAR ALL</button>
+      </div>
+      <div class="log-list" id="logList">
+        <div class="log-empty" id="logEmpty">No scans yet</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-slogan">
+      ⚡ Built with passion by a student at KSU in
+      <a href="https://www.linkedin.com/company/ksu-cyber-security-club/" target="_blank" rel="noopener">Cyber Security Club</a>
+    </div>
+    <a class="footer-repo" href="https://github.com/CyberVigilant/qr-attendance-system" target="_blank" rel="noopener">
+      <svg height="13" viewBox="0 0 16 16" width="13" fill="currentColor" aria-hidden="true">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+          0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+          -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+          .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+          -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0
+          1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82
+          1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01
+          1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+      CyberVigilant/qr-attendance-system
+    </a>
+  </footer>
+
+</div><!-- /#app -->
 
 <script>
-// ── CONFIG — edit these values ───────────────────────────────
-// SCAN_ENDPOINT: points to your local server's /scan endpoint
-// If using Raspberry Pi + Tailscale: leave as "/scan"
-// If using Mac locally: leave as "/scan"
-const SCAN_ENDPOINT = "/scan";
+'use strict';
 
-// STUDENTS: map of student ID → full name
-// Replace with your actual student list
+// ══════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════
+const SCAN_ENDPOINT = '/scan';
+
 const STUDENTS = {
-  "STU001": "Student One",
-  "STU002": "Student Two",
-  "STU003": "Student Three",
-  // Add all students here...
+  'STU001': 'صالح المحمود',
+  // Add your students here
 };
-// ─────────────────────────────────────────────────────────────
 
-let mode     = "in";
-let scanner  = null;
-let cameraOn = false;
-let cooldown = false;
-let counts   = { in: 0, out: 0, dup: 0 };
-let logItems = [];
-let scannedSet = new Set();
-let DEVICE_NAME = "";
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let deviceName  = '';
+let mode        = 'in';
+let scanner     = null;
+let cameraOn    = false;
+let cooldown    = false;
+let lang        = 'en';
+let counts      = { in: 0, out: 0, dup: 0 };
+let logItems    = [];
+let scanned     = new Set();
 
-function toggleTheme() {
-  const html = document.documentElement;
-  const dark = html.getAttribute("data-theme") === "dark";
-  html.setAttribute("data-theme", dark ? "light" : "dark");
-  document.getElementById("themeBtn").textContent = dark ? "🌙" : "☀️";
+// ══════════════════════════════════════════════════
+// STRINGS
+// ══════════════════════════════════════════════════
+const T = {
+  en: {
+    checkIn:'CHECK IN', checkOut:'CHECK OUT',
+    startCam:'START CAMERA', promptText:'Tap to start scanning student QR codes',
+    camPaused:'Camera paused', resume:'Resume',
+    lblIn:'CHECK INS', lblOut:'CHECK OUTS', lblDup:'DUPLICATES',
+    lblLog:'SESSION LOG', scans:'scans', clearAll:'CLEAR ALL',
+    clearConfirm:'Clear all session scans?',
+    statusReady:'READY', statusScanning:'SCANNING', statusPaused:'PAUSED', statusError:'ERROR',
+    waiting:'Waiting for scan…',
+    checkedIn:'✓ Checked In', checkedOut:'✓ Checked Out',
+    alreadyScanned:'⚠ Already Scanned', alreadyRec:'already recorded this session',
+    notFound:'✕ Not Recognised', notFoundSub:'ID not in student list',
+    sending:'Sending…', sent:'✓ Sheet updated', inSheet:'Already in sheet',
+    unreachable:'⚠ Server unreachable',
+    setupTitle:'Staff Access',
+    setupDesc:'Enter your name to identify your device in the audit log.',
+    placeholder:'Your name (e.g. Ahmed - Staff)',
+    nameError:'Please enter your name to continue.',
+    enterBtn:'Enter', langBtn:'ع', noScans:'No scans yet',
+    dir:'ltr', locale:'en-GB',
+  },
+  ar: {
+    checkIn:'تسجيل دخول', checkOut:'تسجيل خروج',
+    startCam:'تشغيل الكاميرا', promptText:'اضغط لبدء مسح رموز الطلاب',
+    camPaused:'الكاميرا متوقفة', resume:'استئناف',
+    lblIn:'دخول', lblOut:'خروج', lblDup:'مكرر',
+    lblLog:'سجل الجلسة', scans:'عمليات مسح', clearAll:'مسح الكل',
+    clearConfirm:'مسح جميع عمليات الجلسة؟',
+    statusReady:'جاهز', statusScanning:'يمسح', statusPaused:'موقوف', statusError:'خطأ',
+    waiting:'بانتظار المسح…',
+    checkedIn:'✓ تم تسجيل الدخول', checkedOut:'✓ تم تسجيل الخروج',
+    alreadyScanned:'⚠ تم المسح مسبقاً', alreadyRec:'مسجّل في هذه الجلسة',
+    notFound:'✕ غير معروف', notFoundSub:'المعرّف غير موجود في القائمة',
+    sending:'جارٍ الإرسال…', sent:'✓ تم التحديث', inSheet:'موجود مسبقاً',
+    unreachable:'⚠ الخادم غير متاح',
+    setupTitle:'دخول الموظفين',
+    setupDesc:'أدخل اسمك لتمييز جهازك في سجل التدقيق.',
+    placeholder:'اسمك (مثال: أحمد - موظف)',
+    nameError:'الرجاء إدخال اسمك للمتابعة.',
+    enterBtn:'دخول', langBtn:'EN', noScans:'لا توجد عمليات مسح',
+    dir:'rtl', locale:'ar-SA',
+  }
+};
+
+const t = () => T[lang];
+
+// ══════════════════════════════════════════════════
+// SETUP SCREEN
+// ══════════════════════════════════════════════════
+function initSetup() {
+  const input = document.getElementById('nameInput');
+  const btn   = document.getElementById('enterBtn');
+  const err   = document.getElementById('nameError');
+
+  function submit() {
+    const val = input.value.trim();
+    if (!val) {
+      input.classList.add('error');
+      err.classList.add('show');
+      input.focus();
+      return;
+    }
+    deviceName = val;
+    sessionStorage.setItem('deviceName', val);
+    document.getElementById('setup').classList.add('hidden');
+    initApp();
+  }
+
+  btn.addEventListener('click', submit);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  input.addEventListener('input', () => {
+    input.classList.remove('error');
+    err.classList.remove('show');
+  });
 }
 
+// ══════════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════════
+function toggleTheme() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = dark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  sessionStorage.setItem('theme', next);
+
+  const pill = document.getElementById('themePill');
+  const btn  = document.getElementById('themeBtn');
+  if (pill) pill.classList.toggle('active', next === 'light');
+  if (btn)  btn.textContent = next === 'light' ? '🌙' : '☀️';
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const pill = document.getElementById('themePill');
+  const btn  = document.getElementById('themeBtn');
+  if (pill) pill.classList.toggle('active', theme === 'light');
+  if (btn)  btn.textContent = theme === 'light' ? '🌙' : '☀️';
+}
+
+// ══════════════════════════════════════════════════
+// LANGUAGE
+// ══════════════════════════════════════════════════
+function toggleLang() {
+  lang = lang === 'en' ? 'ar' : 'en';
+  sessionStorage.setItem('lang', lang);
+  applyLang();
+}
+
+function applyLang() {
+  const s = t();
+  document.documentElement.setAttribute('dir', s.dir);
+  document.documentElement.setAttribute('lang', lang);
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('langBtn',   s.langBtn);
+  set('btnIn',     s.checkIn);
+  set('btnOut',    s.checkOut);
+  set('lblIn',     s.lblIn);
+  set('lblOut',    s.lblOut);
+  set('lblDup',    s.lblDup);
+  set('lblLog',    s.lblLog);
+  set('clearBtn',  s.clearAll);
+  set('resultIdle', s.waiting);
+  set('statusLabel', s.statusReady);
+
+  const lc = document.getElementById('logCount');
+  if (lc) lc.textContent = logItems.length + ' ' + s.scans;
+
+  const le = document.getElementById('logEmpty');
+  if (le) le.textContent = s.noScans;
+
+  const pt = document.getElementById('promptText');
+  if (pt) pt.textContent = s.promptText;
+  const sb = document.getElementById('startBtn');
+  if (sb) sb.textContent = s.startCam;
+
+  updateDate();
+}
+
+function updateDate() {
+  const el = document.getElementById('dateLabel');
+  if (el) el.textContent = new Date().toLocaleDateString(t().locale, {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+}
+
+// ══════════════════════════════════════════════════
+// MODE
+// ══════════════════════════════════════════════════
 function setMode(m) {
   mode = m;
-  document.getElementById("btnIn").className  = "toggle-btn" + (m === "in"  ? " active-in"  : "");
-  document.getElementById("btnOut").className = "toggle-btn" + (m === "out" ? " active-out" : "");
+  document.getElementById('btnIn').className  = 'mode-btn' + (m === 'in'  ? ' in'  : '');
+  document.getElementById('btnOut').className = 'mode-btn' + (m === 'out' ? ' out' : '');
 }
 
+// ══════════════════════════════════════════════════
+// CAMERA
+// ══════════════════════════════════════════════════
 function toggleCamera() {
-  if (!cameraOn) startScanner(); else stopScanner();
+  cameraOn ? stopCamera() : startCamera();
 }
 
-function stopScanner() {
-  if (scanner) {
-    scanner.stop().then(() => {
-      scanner = null; cameraOn = false;
-      setStatus("stopped", "PAUSED");
-      document.getElementById("camBtn").textContent = "▶";
-      const wrap = document.getElementById("cameraWrap");
-      wrap.className = "camera-wrap";
-      wrap.innerHTML = `<div id="reader" style="display:none"></div><div class="cam-stopped"><span>⏸</span><p>Camera paused</p></div>`;
-      const btn = document.createElement("button");
-      btn.className = "start-btn"; btn.textContent = "Resume"; btn.onclick = startScanner;
-      wrap.querySelector(".cam-stopped").appendChild(btn);
-    }).catch(() => {});
-  }
-}
+function startCamera() {
+  const area = document.getElementById('cameraArea');
+  area.innerHTML = `
+    <div class="camera-wrap">
+      <div id="qr-reader"></div>
+      <div class="scan-overlay">
+        <div class="scan-frame"><span></span><div class="scan-line"></div></div>
+      </div>
+    </div>`;
 
-function startScanner() {
-  const wrap = document.getElementById("cameraWrap");
-  wrap.className = "camera-wrap";
-  wrap.innerHTML = `<div id="reader"></div><div class="scan-overlay"><div class="scan-frame"><span></span><div class="scan-line"></div></div></div>`;
-  scanner = new Html5Qrcode("reader");
-  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 200, height: 200 } }, onScan, () => {})
-    .then(() => { cameraOn = true; setStatus("scanning", "SCANNING"); document.getElementById("camBtn").textContent = "⏹"; })
+  scanner = new Html5Qrcode('qr-reader');
+
+  const cfg = { fps: 10, qrbox: { width: 210, height: 210 } };
+
+  scanner.start({ facingMode: 'environment' }, cfg, onScan, () => {})
+    .then(() => onCameraReady())
     .catch(() => {
-      scanner.start({ facingMode: "user" }, { fps: 10, qrbox: { width: 200, height: 200 } }, onScan, () => {})
-        .then(() => { cameraOn = true; setStatus("scanning", "SCANNING"); document.getElementById("camBtn").textContent = "⏹"; })
-        .catch(showCamError);
+      scanner.start({ facingMode: 'user' }, cfg, onScan, () => {})
+        .then(() => onCameraReady())
+        .catch(() => showCameraError());
     });
 }
 
-function setStatus(state, text) {
-  const pill = document.getElementById("statusPill");
-  pill.className = "status-pill " + state;
-  document.getElementById("statusText").textContent = text;
+function onCameraReady() {
+  cameraOn = true;
+  setStatus('scanning', t().statusScanning);
+  document.getElementById('camBtn').textContent = '⏹';
 }
 
-function showCamError() {
-  document.getElementById("cameraWrap").innerHTML = `<div class="perm-prompt"><div class="icon">⚠️</div><p>Camera access denied.<br>Check browser permissions<br>and reload the page.</p></div>`;
-  setStatus("stopped", "ERROR");
+function stopCamera() {
+  if (!scanner) return;
+  scanner.stop().then(() => {
+    scanner  = null;
+    cameraOn = false;
+    setStatus('', t().statusPaused);
+    document.getElementById('camBtn').textContent = '▶';
+
+    const area = document.getElementById('cameraArea');
+    area.innerHTML = `
+      <div class="camera-wrap">
+        <div class="cam-paused">
+          <div class="pause-icon">⏸</div>
+          <p>${t().camPaused}</p>
+          <button class="start-btn" onclick="startCamera()">${t().resume}</button>
+        </div>
+      </div>`;
+  }).catch(() => {});
 }
 
-function onScan(decodedText) {
+function showCameraError() {
+  document.getElementById('cameraArea').innerHTML = `
+    <div class="camera-prompt">
+      <div class="prompt-icon">⚠️</div>
+      <p>Camera access denied.<br>Check browser permissions and reload.</p>
+    </div>`;
+  setStatus('', t().statusError);
+}
+
+function setStatus(cls, text) {
+  const pill = document.getElementById('statusPill');
+  pill.className = 'status-pill ' + cls;
+  document.getElementById('statusLabel').textContent = text;
+}
+
+// ══════════════════════════════════════════════════
+// SCANNING
+// ══════════════════════════════════════════════════
+function onScan(raw) {
   if (cooldown) return;
   cooldown = true;
-  const studentId = decodedText.trim();
-  const name      = STUDENTS[studentId];
-  const key       = `${studentId}_${mode}`;
-  const timestamp = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+  const id   = raw.trim();
+  const name = STUDENTS[id];
+  const key  = id + '_' + mode;
+  const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
   if (!name) {
-    showResult("error", "✕ Not Recognised", studentId, "ID not found in student list", timestamp);
-    resetCard(); return;
-  }
-  if (scannedSet.has(key)) {
+    showResult('error', t().notFound, id, t().notFoundSub);
+  } else if (scanned.has(key)) {
     counts.dup++;
-    document.getElementById("statDup").textContent = counts.dup;
-    showResult("warning", "⚠ Already Scanned", name, `${studentId} · already recorded`, timestamp);
-    resetCard(); return;
+    document.getElementById('cntDup').textContent = counts.dup;
+    showResult('warning', t().alreadyScanned, name, id + ' · ' + t().alreadyRec);
+  } else {
+    scanned.add(key);
+    counts[mode]++;
+    document.getElementById('cntIn').textContent  = counts.in;
+    document.getElementById('cntOut').textContent = counts.out;
+    showResult('success', mode === 'in' ? t().checkedIn : t().checkedOut, name, id + ' · ' + t().sending);
+    addLog(id, name, mode, time);
+    sendToSheet(id, name, mode, time);
   }
-  scannedSet.add(key);
-  counts[mode]++;
-  document.getElementById("statIn").textContent  = counts.in;
-  document.getElementById("statOut").textContent = counts.out;
-  showResult("success", mode === "in" ? "✓ Checked In" : "✓ Checked Out", name, `${studentId} · Sending…`, timestamp);
-  addLog(studentId, name, mode, timestamp);
-  sendToSheet(studentId, name, mode, timestamp);
-  resetCard();
-}
 
-function showResult(type, status, name, meta) {
-  const card = document.getElementById("resultCard");
-  card.className = `result-card ${type}`;
-  card.innerHTML = `<div class="result-status">${status}</div><div class="result-name">${name}</div><div class="result-meta" id="resultMeta">${meta}</div>`;
-}
-
-function resetCard() {
   setTimeout(() => {
-    const card = document.getElementById("resultCard");
-    card.className = "result-card";
-    card.innerHTML = `<div class="result-idle">Waiting for scan…</div>`;
+    const card = document.getElementById('resultCard');
+    card.className = 'result-card';
+    card.innerHTML = `<div class="result-idle" id="resultIdle">${t().waiting}</div>`;
     cooldown = false;
   }, 2500);
 }
 
+function showResult(type, status, name, meta) {
+  const card = document.getElementById('resultCard');
+  card.className = 'result-card ' + type;
+  card.innerHTML = `
+    <div class="result-status">${status}</div>
+    <div class="result-name">${name}</div>
+    <div class="result-meta" id="resultMeta">${meta}</div>`;
+}
+
+// ══════════════════════════════════════════════════
+// LOG
+// ══════════════════════════════════════════════════
 function addLog(id, name, type, time) {
   logItems.unshift({ id, name, type, time, uid: Date.now() });
-  document.getElementById("logCount").textContent = logItems.length + " scans";
+  document.getElementById('logCount').textContent = logItems.length + ' ' + t().scans;
   renderLog();
 }
 
 function deleteLog(uid) {
   const idx = logItems.findIndex(i => i.uid === uid);
-  if (idx === -1) return;
+  if (idx < 0) return;
   const item = logItems[idx];
-  scannedSet.delete(`${item.id}_${item.type}`);
+  scanned.delete(item.id + '_' + item.type);
   counts[item.type] = Math.max(0, counts[item.type] - 1);
-  document.getElementById("statIn").textContent  = counts.in;
-  document.getElementById("statOut").textContent = counts.out;
+  document.getElementById('cntIn').textContent  = counts.in;
+  document.getElementById('cntOut').textContent = counts.out;
   logItems.splice(idx, 1);
-  document.getElementById("logCount").textContent = logItems.length + " scans";
+  document.getElementById('logCount').textContent = logItems.length + ' ' + t().scans;
   renderLog();
 }
 
 function renderLog() {
-  const list = document.getElementById("logList");
-  if (logItems.length === 0) { list.innerHTML = `<div class="log-empty">No scans yet</div>`; return; }
+  const list = document.getElementById('logList');
+  if (!logItems.length) {
+    list.innerHTML = `<div class="log-empty" id="logEmpty">${t().noScans}</div>`;
+    return;
+  }
   list.innerHTML = logItems.map(i => `
     <div class="log-item">
-      <div class="log-name">${i.name}</div>
-      <div class="log-type ${i.type}">${i.type === "in" ? "IN" : "OUT"}</div>
-      <div class="log-time">${i.time}</div>
-      <button class="log-delete" onclick="deleteLog(${i.uid})" title="Remove from session">✕</button>
-    </div>`).join("");
+      <span class="log-name">${i.name}</span>
+      <span class="log-badge ${i.type}">${i.type === 'in' ? 'IN' : 'OUT'}</span>
+      <span class="log-time">${i.time}</span>
+      <button class="log-del" onclick="deleteLog(${i.uid})" title="Remove">✕</button>
+    </div>`).join('');
 }
 
 function clearSession() {
-  if (logItems.length === 0) return;
-  if (!confirm("Clear all scans from this session?")) return;
-  logItems = []; scannedSet.clear(); counts = { in: 0, out: 0, dup: 0 };
-  document.getElementById("statIn").textContent  = "0";
-  document.getElementById("statOut").textContent = "0";
-  document.getElementById("statDup").textContent = "0";
-  document.getElementById("logCount").textContent = "0 scans";
+  if (!logItems.length) return;
+  if (!confirm(t().clearConfirm)) return;
+  logItems = []; scanned.clear(); counts = { in: 0, out: 0, dup: 0 };
+  ['cntIn','cntOut','cntDup'].forEach(id => document.getElementById(id).textContent = '0');
+  document.getElementById('logCount').textContent = '0 ' + t().scans;
   renderLog();
 }
 
+// ══════════════════════════════════════════════════
+// SEND TO SHEET
+// ══════════════════════════════════════════════════
 function sendToSheet(id, name, type, time) {
-  const params = new URLSearchParams({ id, name, type, time, device: DEVICE_NAME });
-  const url = SCAN_ENDPOINT + "?" + params.toString();
-  const meta = document.getElementById("resultMeta");
+  const url = SCAN_ENDPOINT + '?' + new URLSearchParams({ id, name, type, time, device: deviceName });
   fetch(url)
     .then(r => r.json())
     .then(data => {
-      if (meta) {
-        if (data.status === "ok")            meta.textContent = `${id} · ✓ Sheet updated`;
-        else if (data.status === "duplicate") meta.textContent = `${id} · Already in sheet`;
-        else                                  meta.textContent = `${id} · ${data.status}`;
-      }
+      const meta = document.getElementById('resultMeta');
+      if (!meta) return;
+      if      (data.status === 'ok')        meta.textContent = id + ' · ' + t().sent;
+      else if (data.status === 'duplicate') meta.textContent = id + ' · ' + t().inSheet;
+      else                                  meta.textContent = id + ' · ' + data.status;
     })
-    .catch(() => { if (meta) meta.textContent = `${id} · ⚠ Server unreachable`; });
+    .catch(() => {
+      const meta = document.getElementById('resultMeta');
+      if (meta) meta.textContent = id + ' · ' + t().unreachable;
+    });
 }
 
-function confirmSetup() {
-  const device = document.getElementById("deviceInput").value.trim();
-  if (!device) {
-    document.getElementById("deviceInput").style.borderColor = "var(--red)";
-    document.getElementById("urlError").style.display = "block";
-    return;
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+function initApp() {
+  updateDate();
+  applyLang();
+}
+
+(function boot() {
+  // Restore preferences
+  const savedTheme = sessionStorage.getItem('theme');
+  if (savedTheme) applyTheme(savedTheme);
+
+  const savedLang = sessionStorage.getItem('lang');
+  if (savedLang) { lang = savedLang; }
+
+  const savedName = sessionStorage.getItem('deviceName');
+  if (savedName) {
+    deviceName = savedName;
+    document.getElementById('setup').classList.add('hidden');
+    initApp();
+  } else {
+    initSetup();
+    applyLang();
+    updateDate();
   }
-  DEVICE_NAME = device;
-  sessionStorage.setItem("asDevice", device);
-  document.getElementById("setupOverlay").style.display = "none";
-}
-
-(function() {
-  const savedDevice = sessionStorage.getItem("asDevice");
-  if (savedDevice) { DEVICE_NAME = savedDevice; document.getElementById("setupOverlay").style.display = "none"; }
-  const now = new Date();
-  document.getElementById("todayDate").textContent = now.toLocaleDateString("en-GB", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
 })();
 </script>
 </body>
