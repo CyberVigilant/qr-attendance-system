@@ -108,12 +108,8 @@ Google Apps Script
 
 Create a Google Sheet with two tabs:
 
-**Attendance tab** (columns):
-```
-A: Date | B: Time In | C: ID | D: Name | E: IN | F: OUT | G: Time Out
-```
+Create one tab called **Attendance** with these headers:
 
-**Audit tab** (columns):
 ```
 A: Timestamp | B: Device | C: ID | D: Name | E: Action
 ```
@@ -148,7 +144,7 @@ https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_HERE/edit
 
 1. Clone this repo:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/qr-attendance-system.git
+   git clone https://github.com/CyberVigilant/qr-attendance-system.git
    cd qr-attendance-system
    ```
 
