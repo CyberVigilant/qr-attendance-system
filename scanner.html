@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Scanner</title>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap');
+
+  [data-theme="dark"] {
+    --bg:         #0a0c10;
+    --surface:    #111418;
+    --border:     #1e2530;
+    --text:       #e2e8f0;
+    --muted:      #64748b;
+    --accent:     #00d4aa;
+    --accent-dim: rgba(0,212,170,0.10);
+    --red:        #ff4d6d;
+    --red-dim:    rgba(255,77,109,0.10);
+    --yellow:     #fbbf24;
+    --yellow-dim: rgba(251,191,36,0.10);
+  }
+
+  [data-theme="light"] {
+    --bg:         #f0f2f5;
+    --surface:    #ffffff;
+    --border:     #dde1e7;
+    --text:       #111418;
+    --muted:      #8896a8;
+    --accent:     #00a884;
+    --accent-dim: rgba(0,168,132,0.10);
+    --red:        #e03354;
+    --red-dim:    rgba(224,51,84,0.10);
+    --yellow:     #d97706;
+    --yellow-dim: rgba(217,119,6,0.10);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans Arabic', 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: background 0.25s, color 0.25s;
+  }
+
+  header {
+    width: 100%;
+    max-width: 480px;
+    padding: 18px 16px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+
+  .icon-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; cursor: pointer;
+    font-size: 15px; transition: border-color 0.2s; color: var(--text); line-height: 1;
+  }
+  .icon-btn:hover { border-color: var(--accent); }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    color: var(--muted); letter-spacing: 0.08em;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 10px;
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .status-pill.scanning { color: var(--accent); border-color: rgba(0,212,170,0.3); }
+  .status-pill.scanning .dot { background: var(--accent); animation: pulse 1.5s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+
+  main { width: 100%; max-width: 480px; padding: 14px 16px 40px; display: flex; flex-direction: column; gap: 12px; }
+
+  .toggle-wrap {
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 3px; gap: 3px;
+  }
+  .toggle-btn {
+    padding: 9px; border: 1px solid transparent; border-radius: 7px;
+    background: transparent; color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    font-weight: 600; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;
+  }
+  .toggle-btn.active-in  { background: var(--accent-dim); color: var(--accent); border-color: rgba(0,212,170,0.3); }
+  .toggle-btn.active-out { background: var(--red-dim);    color: var(--red);    border-color: rgba(255,77,109,0.3); }
+
+  .camera-wrap {
+    position: relative; background: #000;
+    border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; aspect-ratio: 1;
+  }
+  #reader { width: 100% !important; }
+  #reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+  #reader img { display: none !important; }
+
+  .scan-overlay { position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+  .scan-frame { width: 54%; height: 54%; position: relative; }
+  .scan-frame::before,.scan-frame::after,.scan-frame span::before,.scan-frame span::after {
+    content:''; position:absolute; width:20px; height:20px; border-color:var(--accent); border-style:solid;
+  }
+  .scan-frame::before      { top:0;    left:0;  border-width:2px 0 0 2px; }
+  .scan-frame::after       { top:0;    right:0; border-width:2px 2px 0 0; }
+  .scan-frame span::before { bottom:0; left:0;  border-width:0 0 2px 2px; }
+  .scan-frame span::after  { bottom:0; right:0; border-width:0 2px 2px 0; }
+  .scan-line {
+    position:absolute; left:8%; right:8%; height:1px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    animation:scanline 2s ease-in-out infinite;
+  }
+  @keyframes scanline { 0%{top:15%;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{top:85%;opacity:0} }
+
+  .cam-stopped {
+    position:absolute; inset:0; background:rgba(0,0,0,0.85);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:10px; border-radius:14px;
+  }
+  .cam-stopped span { font-size:32px; }
+  .cam-stopped p { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); }
+
+  .perm-prompt {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:12px; aspect-ratio:1; background:var(--surface);
+    border:1px solid var(--border); border-radius:14px;
+  }
+  .perm-prompt .icon { font-size:32px; }
+  .perm-prompt p { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); text-align:center; padding:0 24px; line-height:1.7; }
+
+  .start-btn {
+    background:var(--accent); color:#fff; border:none; border-radius:8px;
+    padding:11px 26px; font-family:'IBM Plex Mono',monospace; font-size:12px;
+    font-weight:600; letter-spacing:0.05em; cursor:pointer; transition:opacity 0.2s;
+  }
+  .start-btn:hover { opacity:0.85; }
+
+  .result-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:16px; display:flex; flex-direction:column;
+    gap:3px; min-height:82px; justify-content:center; transition:all 0.25s;
+  }
+  .result-card.success { border-color:rgba(0,212,170,0.4); background:var(--accent-dim); }
+  .result-card.error   { border-color:rgba(255,77,109,0.4); background:var(--red-dim); }
+  .result-card.warning { border-color:rgba(251,191,36,0.4); background:var(--yellow-dim); }
+
+  .result-status { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
+  .result-card.success .result-status { color:var(--accent); }
+  .result-card.error   .result-status { color:var(--red); }
+  .result-card.warning .result-status { color:var(--yellow); }
+  .result-name { font-size:20px; font-weight:600; color:var(--text); line-height:1.2; }
+  .result-meta { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin-top:1px; }
+  .result-idle { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); text-align:center; }
+
+  .stats-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .stat-box { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+  .stat-label { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .stat-value { font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600; color:var(--text); }
+  .stat-value.warn { color:var(--yellow); }
+
+  .log-section { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .log-header {
+    padding:10px 14px; border-bottom:1px solid var(--border);
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:0.1em;
+    text-transform:uppercase; color:var(--muted); display:flex; justify-content:space-between; align-items:center;
+  }
+  .log-list { max-height:200px; overflow-y:auto; }
+  .log-item {
+    padding:9px 14px; border-bottom:1px solid var(--border);
+    display:grid; grid-template-columns:1fr auto auto auto; gap:8px;
+    align-items:center; animation:slideIn 0.2s ease;
+  }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+  .log-item:last-child { border-bottom:none; }
+  .log-name { font-size:13px; color:var(--text); }
+  .log-type { font-family:'IBM Plex Mono',monospace; font-size:9px; padding:2px 6px; border-radius:4px; font-weight:600; }
+  .log-type.in  { background:var(--accent-dim); color:var(--accent); }
+  .log-type.out { background:var(--red-dim);    color:var(--red); }
+  .log-time { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); }
+  .log-delete { background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; padding:0 2px; line-height:1; transition:color 0.15s; border-radius:4px; }
+  .log-delete:hover { color:var(--red); }
+  .log-empty { padding:20px; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); }
+  .log-list::-webkit-scrollbar { width:3px; }
+  .log-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  .footer { text-align:center; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); padding:4px; opacity:0.5; }
+</style>
+</head>
+<body>
+
+<!-- Setup overlay -->
+<div id="setupOverlay" style="position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:16px;">
+  <div style="font-size:36px">🔐</div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);text-align:center;letter-spacing:0.08em;text-transform:uppercase">Staff Access</div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:center;line-height:1.7;max-width:280px">Enter your name to identify your device in the audit log.</div>
+  <input id="deviceInput" type="text" placeholder="Your name (e.g. Ahmed - Staff)" style="width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text);outline:none;transition:border-color 0.2s;" oninput="this.style.borderColor='var(--accent)'">
+  <div id="urlError" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--red);display:none">Please enter your name</div>
+  <button onclick="confirmSetup()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px 32px;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;letter-spacing:0.05em;cursor:pointer;width:100%;max-width:380px;">Enter</button>
+</div>
+
+<header>
+  <div>
+    <div class="brand">QR ATTENDANCE SYSTEM</div>
+    <div id="todayDate" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:0.05em"></div>
+  </div>
+  <div class="header-right">
+    <button class="icon-btn" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">☀️</button>
+    <button class="icon-btn" onclick="toggleCamera()" id="camBtn" title="Toggle camera">⏹</button>
+    <div class="status-pill" id="statusPill"><div class="dot"></div><span id="statusText">READY</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="toggle-wrap">
+    <button class="toggle-btn active-in" id="btnIn"  onclick="setMode('in')">CHECK IN</button>
+    <button class="toggle-btn"           id="btnOut" onclick="setMode('out')">CHECK OUT</button>
+  </div>
+
+  <div id="cameraWrap" class="perm-prompt">
+    <div class="icon">📷</div>
+    <p>Tap to start scanning<br>student QR codes</p>
+    <button class="start-btn" onclick="startScanner()">START CAMERA</button>
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <div class="result-idle">Waiting for scan…</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-label">CHECK INS</div><div class="stat-value" id="statIn">0</div></div>
+    <div class="stat-box"><div class="stat-label">CHECK OUTS</div><div class="stat-value" id="statOut">0</div></div>
+    <div class="stat-box"><div class="stat-label">DUPLICATES</div><div class="stat-value warn" id="statDup">0</div></div>
+  </div>
+
+  <div class="log-section">
+    <div class="log-header">
+      <span>SESSION LOG</span>
+      <span id="logCount">0 scans</span>
+      <button onclick="clearSession()" style="background:var(--red-dim);border:1px solid rgba(255,77,109,0.3);color:var(--red);border-radius:6px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;cursor:pointer;letter-spacing:0.05em;">CLEAR ALL</button>
+    </div>
+    <div class="log-list" id="logList"><div class="log-empty">No scans yet</div></div>
+  </div>
+</main>
+
+<div class="footer">
+  <a href="https://github.com/CyberVigilant/qr-attendance-system" target="_blank" 
+     style="color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;opacity:0.6;transition:opacity 0.2s;"
+     onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
+    <svg height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+    </svg>
+    CyberVigilant/qr-attendance-system
+  </a>
+</div>
+
+<script>
+// ── CONFIG — edit these values ───────────────────────────────
+// SCAN_ENDPOINT: points to your local server's /scan endpoint
+// If using Raspberry Pi + Tailscale: leave as "/scan"
+// If using Mac locally: leave as "/scan"
+const SCAN_ENDPOINT = "/scan";
+
+// STUDENTS: map of student ID → full name
+// Replace with your actual student list
+const STUDENTS = {
+  "STU001": "Student One",
+  "STU002": "Student Two",
+  "STU003": "Student Three",
+  // Add all students here...
+};
+// ─────────────────────────────────────────────────────────────
+
+let mode     = "in";
+let scanner  = null;
+let cameraOn = false;
+let cooldown = false;
+let counts   = { in: 0, out: 0, dup: 0 };
+let logItems = [];
+let scannedSet = new Set();
+let DEVICE_NAME = "";
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const dark = html.getAttribute("data-theme") === "dark";
+  html.setAttribute("data-theme", dark ? "light" : "dark");
+  document.getElementById("themeBtn").textContent = dark ? "🌙" : "☀️";
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById("btnIn").className  = "toggle-btn" + (m === "in"  ? " active-in"  : "");
+  document.getElementById("btnOut").className = "toggle-btn" + (m === "out" ? " active-out" : "");
+}
+
+function toggleCamera() {
+  if (!cameraOn) startScanner(); else stopScanner();
+}
+
+function stopScanner() {
+  if (scanner) {
+    scanner.stop().then(() => {
+      scanner = null; cameraOn = false;
+      setStatus("stopped", "PAUSED");
+      document.getElementById("camBtn").textContent = "▶";
+      const wrap = document.getElementById("cameraWrap");
+      wrap.className = "camera-wrap";
+      wrap.innerHTML = `<div id="reader" style="display:none"></div><div class="cam-stopped"><span>⏸</span><p>Camera paused</p></div>`;
+      const btn = document.createElement("button");
+      btn.className = "start-btn"; btn.textContent = "Resume"; btn.onclick = startScanner;
+      wrap.querySelector(".cam-stopped").appendChild(btn);
+    }).catch(() => {});
+  }
+}
+
+function startScanner() {
+  const wrap = document.getElementById("cameraWrap");
+  wrap.className = "camera-wrap";
+  wrap.innerHTML = `<div id="reader"></div><div class="scan-overlay"><div class="scan-frame"><span></span><div class="scan-line"></div></div></div>`;
+  scanner = new Html5Qrcode("reader");
+  scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 200, height: 200 } }, onScan, () => {})
+    .then(() => { cameraOn = true; setStatus("scanning", "SCANNING"); document.getElementById("camBtn").textContent = "⏹"; })
+    .catch(() => {
+      scanner.start({ facingMode: "user" }, { fps: 10, qrbox: { width: 200, height: 200 } }, onScan, () => {})
+        .then(() => { cameraOn = true; setStatus("scanning", "SCANNING"); document.getElementById("camBtn").textContent = "⏹"; })
+        .catch(showCamError);
+    });
+}
+
+function setStatus(state, text) {
+  const pill = document.getElementById("statusPill");
+  pill.className = "status-pill " + state;
+  document.getElementById("statusText").textContent = text;
+}
+
+function showCamError() {
+  document.getElementById("cameraWrap").innerHTML = `<div class="perm-prompt"><div class="icon">⚠️</div><p>Camera access denied.<br>Check browser permissions<br>and reload the page.</p></div>`;
+  setStatus("stopped", "ERROR");
+}
+
+function onScan(decodedText) {
+  if (cooldown) return;
+  cooldown = true;
+  const studentId = decodedText.trim();
+  const name      = STUDENTS[studentId];
+  const key       = `${studentId}_${mode}`;
+  const timestamp = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+  if (!name) {
+    showResult("error", "✕ Not Recognised", studentId, "ID not found in student list", timestamp);
+    resetCard(); return;
+  }
+  if (scannedSet.has(key)) {
+    counts.dup++;
+    document.getElementById("statDup").textContent = counts.dup;
+    showResult("warning", "⚠ Already Scanned", name, `${studentId} · already recorded`, timestamp);
+    resetCard(); return;
+  }
+  scannedSet.add(key);
+  counts[mode]++;
+  document.getElementById("statIn").textContent  = counts.in;
+  document.getElementById("statOut").textContent = counts.out;
+  showResult("success", mode === "in" ? "✓ Checked In" : "✓ Checked Out", name, `${studentId} · Sending…`, timestamp);
+  addLog(studentId, name, mode, timestamp);
+  sendToSheet(studentId, name, mode, timestamp);
+  resetCard();
+}
+
+function showResult(type, status, name, meta) {
+  const card = document.getElementById("resultCard");
+  card.className = `result-card ${type}`;
+  card.innerHTML = `<div class="result-status">${status}</div><div class="result-name">${name}</div><div class="result-meta" id="resultMeta">${meta}</div>`;
+}
+
+function resetCard() {
+  setTimeout(() => {
+    const card = document.getElementById("resultCard");
+    card.className = "result-card";
+    card.innerHTML = `<div class="result-idle">Waiting for scan…</div>`;
+    cooldown = false;
+  }, 2500);
+}
+
+function addLog(id, name, type, time) {
+  logItems.unshift({ id, name, type, time, uid: Date.now() });
+  document.getElementById("logCount").textContent = logItems.length + " scans";
+  renderLog();
+}
+
+function deleteLog(uid) {
+  const idx = logItems.findIndex(i => i.uid === uid);
+  if (idx === -1) return;
+  const item = logItems[idx];
+  scannedSet.delete(`${item.id}_${item.type}`);
+  counts[item.type] = Math.max(0, counts[item.type] - 1);
+  document.getElementById("statIn").textContent  = counts.in;
+  document.getElementById("statOut").textContent = counts.out;
+  logItems.splice(idx, 1);
+  document.getElementById("logCount").textContent = logItems.length + " scans";
+  renderLog();
+}
+
+function renderLog() {
+  const list = document.getElementById("logList");
+  if (logItems.length === 0) { list.innerHTML = `<div class="log-empty">No scans yet</div>`; return; }
+  list.innerHTML = logItems.map(i => `
+    <div class="log-item">
+      <div class="log-name">${i.name}</div>
+      <div class="log-type ${i.type}">${i.type === "in" ? "IN" : "OUT"}</div>
+      <div class="log-time">${i.time}</div>
+      <button class="log-delete" onclick="deleteLog(${i.uid})" title="Remove from session">✕</button>
+    </div>`).join("");
+}
+
+function clearSession() {
+  if (logItems.length === 0) return;
+  if (!confirm("Clear all scans from this session?")) return;
+  logItems = []; scannedSet.clear(); counts = { in: 0, out: 0, dup: 0 };
+  document.getElementById("statIn").textContent  = "0";
+  document.getElementById("statOut").textContent = "0";
+  document.getElementById("statDup").textContent = "0";
+  document.getElementById("logCount").textContent = "0 scans";
+  renderLog();
+}
+
+function sendToSheet(id, name, type, time) {
+  const params = new URLSearchParams({ id, name, type, time, device: DEVICE_NAME });
+  const url = SCAN_ENDPOINT + "?" + params.toString();
+  const meta = document.getElementById("resultMeta");
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (meta) {
+        if (data.status === "ok")            meta.textContent = `${id} · ✓ Sheet updated`;
+        else if (data.status === "duplicate") meta.textContent = `${id} · Already in sheet`;
+        else                                  meta.textContent = `${id} · ${data.status}`;
+      }
+    })
+    .catch(() => { if (meta) meta.textContent = `${id} · ⚠ Server unreachable`; });
+}
+
+function confirmSetup() {
+  const device = document.getElementById("deviceInput").value.trim();
+  if (!device) {
+    document.getElementById("deviceInput").style.borderColor = "var(--red)";
+    document.getElementById("urlError").style.display = "block";
+    return;
+  }
+  DEVICE_NAME = device;
+  sessionStorage.setItem("asDevice", device);
+  document.getElementById("setupOverlay").style.display = "none";
+}
+
+(function() {
+  const savedDevice = sessionStorage.getItem("asDevice");
+  if (savedDevice) { DEVICE_NAME = savedDevice; document.getElementById("setupOverlay").style.display = "none"; }
+  const now = new Date();
+  document.getElementById("todayDate").textContent = now.toLocaleDateString("en-GB", { weekday:"long", year:"numeric", month:"long", day:"numeric" });
+})();
+</script>
+</body>
+</html>
