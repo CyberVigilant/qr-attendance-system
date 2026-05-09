@@ -332,6 +332,18 @@ Audit log entry added
 
 ---
 
+## Disclaimer
+
+This project is provided as-is for educational and operational use. By deploying this system you accept full responsibility for:
+
+- Securing your own Apps Script URL and secret token
+- Protecting student data in compliance with your local privacy laws
+- Any data breaches resulting from misconfiguration on your end
+
+The security architecture documented here follows best practices. However, the author makes no guarantees about absolute security. **Do not store sensitive personal data beyond what is necessary for attendance tracking.**
+
+---
+
 ## License
 
 MIT — free to use, modify, and distribute.
