@@ -98,11 +98,15 @@ if __name__ == "__main__":
         exit(1)
 
     print(f"""
-╔══════════════════════════════════════════════════╗
-║   QR Attendance Server                           ║
-║   Local:  http://127.0.0.1:{PORT}/scanner.html   ║
-║   HTTPS via Tailscale Serve                      ║
-╚══════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════╗
+║   QR Attendance Server                                       ║
+║                                                              ║
+║   Local:  http://127.0.0.1:{PORT}/scanner.html               ║
+║   Staff:  https://<your-device>.tail<id>.ts.net/scanner.html ║
+║                                                              ║
+║   Make sure Tailscale Serve is running:                      ║
+║   tailscale serve --bg http://localhost:8080                 ║
+╚══════════════════════════════════════════════════════════════╝
 Press Ctrl+C to stop.
 """)
     server = http.server.HTTPServer((HOST, PORT), Handler)
