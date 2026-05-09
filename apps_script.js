@@ -31,7 +31,7 @@ function doGet(e) {
 
   const ss         = SpreadsheetApp.openById(SHEET_ID);
   const attendance = ss.getSheetByName("Attendance");
-  const audit      = ss.getSheetByName("Audit");
+  const audit      = ss.getSheetByName("Attendance");
   const now        = new Date();
   const date       = Utilities.formatDate(now, TIMEZONE, "dd/MM/yyyy");
   const timestamp  = Utilities.formatDate(now, TIMEZONE, "dd/MM/yyyy hh:mm a");
